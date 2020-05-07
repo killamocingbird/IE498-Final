@@ -43,7 +43,6 @@ CAPTION_FILE_PATH = 'data/annotations/captions_train2014.json'
 
 vocab = load_vocab()
 
-print(len(vocab))
 train_loader = get_coco_data_loader(path=IMAGES_PATH,
                                     json=CAPTION_FILE_PATH,
                                     vocab=vocab,
@@ -71,7 +70,7 @@ optimizer = optim.Adam(model.parameters(), lr=lr)
 
 # Load in checkpoint to continue training if applicable
 if checkpoint is not None:
-    print("Loading checkpoint")
+    u.b_print("Loading checkpoint")
     checkpoint = torch.load(checkpoint)
     model.load(checkpoint)
     model = model.to(device)
@@ -89,7 +88,7 @@ for epoch in range(epochs):
     # Book keeping
     running_loss = 0
     model.train()
-    for i, (image, caption, lengths) in enumerate(train_loader):
+    for i, (image, caption, lengths) in enumerate(tqdm(train_loader)):
         # Cast to device
         image = image.to(device)
         caption = caption.to(device)
@@ -104,8 +103,6 @@ for epoch in range(epochs):
 
         labels = pack_padded_sequence(caption, lengths, batch_first = True)[0]
 
-        print('pred shape: ',pred.shape)
-        print('labels shape: ',labels.shape)
         loss = criteria(pred, labels)
         
         # Gradient step
@@ -123,7 +120,7 @@ for epoch in range(epochs):
     running_val_loss = 0
     model.eval()
     with torch.no_grad():
-        for i, (image, caption, lengths) in enumerate(tqdm(test_loader)):
+        for i, (image, caption, lengths) in enumerate(tqdm(val_loader)):
             # Cast to device
             image = image.to(device)
             caption = caption.to(device)

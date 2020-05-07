@@ -31,7 +31,6 @@ class ShowTell(m.Foundation):
 
     def forward(self, images, captions, lengths):
         features = self.CNN(images)
-        print('features ', features.shape)
         outputs = self.RNN(features, captions, lengths)
 
         self.features = features # saved in case we want to access
@@ -118,9 +117,6 @@ class RNN(m.Foundation):
         """
         # embed tokens in vector space
         embeddings = self.embeddings(captions)
-
-        print('embeddings', embeddings.shape)
-        print('features', features.unsqueeze(1).shape)
 
         # append image as first input
         inputs = torch.cat((features.unsqueeze(1), embeddings), 1)
