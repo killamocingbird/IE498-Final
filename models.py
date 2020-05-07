@@ -11,14 +11,6 @@ from torch.nn.utils.rnn import pack_padded_sequence
 Declare all models here
 """
 
-# Inherent Foundation
-class TemplateModel(m.Foundation):
-    def __init__():
-        super().__init__()
-        
-    def forward(self, x):
-        pass
-
 
 class ShowTell(m.Foundation):
     def __init__(self, embed_size, rnn_hidden_size, vocab, rnn_layers):

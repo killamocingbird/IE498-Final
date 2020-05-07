@@ -12,6 +12,7 @@ from torch.nn.utils.rnn import pack_padded_sequence
 import models as m
 from vocab import Vocabulary, load_vocab
 from data_loader import get_coco_data_loader
+import utils as u
 
 
 # Header for saving files
@@ -22,8 +23,9 @@ batch_size = 64
 checkpoint = None
 criteria = nn.CrossEntropyLoss()
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-epochs = 100
+epochs = 1000
 lr = 1e-3
+verbose = 1
 
 # Get dataset
 
@@ -62,7 +64,7 @@ val_loader = get_coco_data_loader(path=IMAGES_PATH,
 model = m.ShowTell(embed_size = 512, 
                     rnn_hidden_size = 512, 
                     vocab = vocab, 
-                    rnn_layers = 1)
+                    rnn_layers = 1).to(device)
 # Declare optimizer
 optimizer = optim.Adam(model.parameters(), lr=lr)
 
@@ -82,22 +84,25 @@ if checkpoint is not None:
 
 # Book keep lowest lost for early stopping
 min_loss = 1e8
+u.b_print("Optimizing %d parameters on %s" % (u.count_parameters(model), device))
 for epoch in range(epochs):
     # Book keeping
     running_loss = 0
     model.train()
     for i, (image, caption, lengths) in enumerate(train_loader):
-        """
-        Veyr likely to be incorrect
-        """
+        # Cast to device
+        image = image.to(device)
+        caption = caption.to(device)
+        
         # Image shape:   [batch, 3, x, y], 
         # Caption shape: [batch, tokens]
         pred = model(image, caption, lengths)
         # Pred shape: [sum(lengths), vocab size]
+        
+        # Softmax probabilities
+        pred = torch.softmax(pred, 1)
 
-        labels = caption   # Shape: [batch, tokens] #-1]
-
-        labels = pack_padded_sequence(labels, lengths, batch_first = True)[0]
+        labels = pack_padded_sequence(caption, lengths, batch_first = True)[0]
 
         print('pred shape: ',pred.shape)
         print('labels shape: ',labels.shape)
@@ -118,9 +123,14 @@ for epoch in range(epochs):
     running_val_loss = 0
     model.eval()
     with torch.no_grad():
-        for i, (image, caption) in enumerate(tqdm(test_loader)):
-            pred = model(image, caption[:,:-1,:])
-            labels = torch.argmax(caption[:,1:,:])
+        for i, (image, caption, lengths) in enumerate(tqdm(test_loader)):
+            # Cast to device
+            image = image.to(device)
+            caption = caption.to(device)
+            
+            pred = model(image, caption, lengths)
+            pred = torch.softmax(pred, 1)
+            labels = pack_padded_sequence(caption, lengths, batch_first = True)[0]
             
             loss = criteria(pred, labels)
             
@@ -139,4 +149,10 @@ for epoch in range(epochs):
         min_loss = running_val_loss
         # Save model if it achieves lowest lost alone with optimizer
         model.save(header=header, optimizer=optimizer)
+        
+    # Do output
+    if (epoch+1)%verbose==0:
+        u.b_print("[%d] train: %.8f val: %.8f" % (epoch+1, running_loss, running_val_loss))
+    
+        
         

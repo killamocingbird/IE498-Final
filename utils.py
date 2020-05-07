@@ -112,3 +112,13 @@ def to_var(x):
     if torch.cuda.is_available():
         x = x.cuda()
     return Variable(x)
+
+# Buffered print
+def b_print(s, buffer=1.):
+    time.sleep(buffer / 2)
+    print(s)
+    time.sleep(buffer / 2)
+
+# Count number of parameters in a model
+def count_parameters(model):
+    return sum(p.numel() for p in model.parameters())
