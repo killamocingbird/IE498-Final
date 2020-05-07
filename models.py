@@ -19,44 +19,44 @@ class TemplateModel(m.Foundation):
 
 
 class ShowTell(m.Foundation):
-	def __init__(self, embed_size, rnn_hidden_size, vocab, rnn_layers):
-		super(ShowTell, self).__init__()
-		"""
-		type  name                  default val
-		(int) embed_size 			512
-		(int) rnn_hidden_size 		512
-		(Vocabulary) vocab 			"prexisting vocabulary wrapper"
-		(int) rnn_layers 			1
-		"""
-		self.vocab = vocab
-		vocab_size = len(self.vocab)
-		self.CNN = CNN(embed_size)
-		self.RNN = RNN(embed_size, rnn_hidden_size, vocab_size, rnn_layers)
+    def __init__(self, embed_size, rnn_hidden_size, vocab, rnn_layers):
+        super(ShowTell, self).__init__()
+        """
+        type  name                  default val
+        (int) embed_size            512
+        (int) rnn_hidden_size       512
+        (Vocabulary) vocab          "prexisting vocabulary wrapper"
+        (int) rnn_layers            1
+        """
+        self.vocab = vocab
+        vocab_size = len(self.vocab)
+        self.CNN = CNN(embed_size)
+        self.RNN = RNN(embed_size, rnn_hidden_size, vocab_size, rnn_layers)
 
-		self.features = None
+        self.features = None
 
-	def forward(self, images, captions, lengths):
-		features = self.CNN(images)
-		outputs = self.RNN(features, captions, lengths)
+    def forward(self, images, captions, lengths):
+        features = self.CNN(images)
+        outputs = self.RNN(features, captions, lengths)
 
-		self.features = features # saved in case we want to access
+        self.features = features # saved in case we want to access
 
-		return outputs
+        return outputs
 
-	def sample(self, captions = None):
-		"""
-		Returns:
-		(str) sentence: The output of the RNN based on the most recently calculated features as a readable sentence
-		"""
+    def sample(self, captions = None):
+        """
+        Returns:
+        (str) sentence: The output of the RNN based on the most recently calculated features as a readable sentence
+        """
 
-		sampled_idxs = self.RNN.sample(self.features)
+        sampled_idxs = self.RNN.sample(self.features)
         sampled_idxs = sampled_ids.cpu().data.numpy()[0]
         predicted_sentence = utils.convert_back_to_text(sampled_idxs, vocab)
 
         true_sentence = "<No target sentence provided>"
         try:
-        	true_idxs = captions.cpu().data.numpy()[0]
-        	true_sentence = utils.convert_back_to_text(true_idxs, vocab)
+            true_idxs = captions.cpu().data.numpy()[0]
+            true_sentence = utils.convert_back_to_text(true_idxs, vocab)
 
         return (predicted_sentence, true_sentence)
 
@@ -80,9 +80,9 @@ class CNN(m.Foundation):
         self.linear.bias.data.fill_(0)
 
     def forward(self, x):
-    	"""
-		Since we're applying a linear layer to the end of the pretrained resnet, the features are a 1-D vector
-    	"""
+        """
+        Since we're applying a linear layer to the end of the pretrained resnet, the features are a 1-D vector
+        """
         x = self.resnet(x)
         # x = Variable(x.data) Variable is depreciated but maybe this is needed?
         x = x.view(x.size(0), -1) # flatten
