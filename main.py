@@ -5,9 +5,13 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from tqdm import tqdm
+from torchvision import datasets, models, transforms
+from torch.nn.utils.rnn import pack_padded_sequence
 
 # Custom imports
 import models as m
+from vocab import Vocabulary, load_vocab
+from data_loader import get_coco_data_loader
 
 
 # Header for saving files
@@ -17,7 +21,7 @@ header = 'Model1_'
 batch_size = 64
 checkpoint = None
 criteria = nn.CrossEntropyLoss()
-device = 'cuda' if torch.cuda.is_availabe() else 'cpu'
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
 epochs = 100
 lr = 1e-3
 
@@ -36,6 +40,8 @@ IMAGES_PATH = 'data/train2014'
 CAPTION_FILE_PATH = 'data/annotations/captions_train2014.json'
 
 vocab = load_vocab()
+
+print(len(vocab))
 train_loader = get_coco_data_loader(path=IMAGES_PATH,
                                     json=CAPTION_FILE_PATH,
                                     vocab=vocab,
@@ -53,7 +59,10 @@ val_loader = get_coco_data_loader(path=IMAGES_PATH,
                                   shuffle=True)
 
 # Declare model
-model = m.ShowTell()
+model = m.ShowTell(embed_size = 512, 
+                    rnn_hidden_size = 512, 
+                    vocab = vocab, 
+                    rnn_layers = 1)
 # Declare optimizer
 optimizer = optim.Adam(model.parameters(), lr=lr)
 
@@ -73,18 +82,25 @@ if checkpoint is not None:
 
 # Book keep lowest lost for early stopping
 min_loss = 1e8
-for epoch in range(len(epochs)):
+for epoch in range(epochs):
     # Book keeping
     running_loss = 0
     model.train()
-    for i, (image, caption) in enumerate(tqdm(train_loader)):
+    for i, (image, caption, lengths) in enumerate(train_loader):
         """
         Veyr likely to be incorrect
         """
-        # Expect shape [batch, 3, x, y], [batch, tokens, vocab_size]
-        pred = model(image, caption[:,:-1,:])           # Shape: [batch, tokens-1, vocab_size]
-        labels = torch.argmax(caption[:,1:,:], 2)       # Shape: [batch, tokens-1]
-        
+        # Image shape:   [batch, 3, x, y], 
+        # Caption shape: [batch, tokens]
+        pred = model(image, caption, lengths)
+        # Pred shape: [sum(lengths), vocab size]
+
+        labels = caption   # Shape: [batch, tokens] #-1]
+
+        labels = pack_padded_sequence(labels, lengths, batch_first = True)[0]
+
+        print('pred shape: ',pred.shape)
+        print('labels shape: ',labels.shape)
         loss = criteria(pred, labels)
         
         # Gradient step

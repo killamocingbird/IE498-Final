@@ -1,5 +1,7 @@
 import modules as m
 import utils
+import torch
+import torch.nn as nn
 from torch.nn import Sequential
 from torchvision import models
 from torch.autograd import Variable
@@ -37,6 +39,7 @@ class ShowTell(m.Foundation):
 
     def forward(self, images, captions, lengths):
         features = self.CNN(images)
+        print('features ', features.shape)
         outputs = self.RNN(features, captions, lengths)
 
         self.features = features # saved in case we want to access
@@ -57,6 +60,8 @@ class ShowTell(m.Foundation):
         try:
             true_idxs = captions.cpu().data.numpy()[0]
             true_sentence = utils.convert_back_to_text(true_idxs, vocab)
+        except:
+            pass
 
         return (predicted_sentence, true_sentence)
 
@@ -84,7 +89,7 @@ class CNN(m.Foundation):
         Since we're applying a linear layer to the end of the pretrained resnet, the features are a 1-D vector
         """
         x = self.resnet(x)
-        # x = Variable(x.data) Variable is depreciated but maybe this is needed?
+        x = Variable(x.data) #Variable is depreciated but maybe this is needed?
         x = x.view(x.size(0), -1) # flatten
         x = self.linear(x)
 
@@ -108,7 +113,7 @@ class RNN(m.Foundation):
         super(RNN, self).__init__()
         self.embeddings = nn.Embedding(vocab_size, embed_size)
         # options: nn.RNN, nn.GRU, nn.LSTM
-        self.unit = nn.LSTM(embed_size, hidden_size, num_layers,batch_first=True)
+        self.unit = nn.LSTM(embed_size, hidden_size, layers, batch_first=True)
         self.linear = nn.Linear(hidden_size, vocab_size)
 
     def forward(self, features, captions, lengths):
@@ -121,6 +126,9 @@ class RNN(m.Foundation):
         """
         # embed tokens in vector space
         embeddings = self.embeddings(captions)
+
+        print('embeddings', embeddings.shape)
+        print('features', features.unsqueeze(1).shape)
 
         # append image as first input
         inputs = torch.cat((features.unsqueeze(1), embeddings), 1)
