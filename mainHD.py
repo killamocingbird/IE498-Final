@@ -1,5 +1,4 @@
 # Library imports
-from hypergrad import AdamHD
 import numpy as np
 import torch
 import torch.nn as nn
@@ -10,6 +9,7 @@ from torchvision import datasets, models, transforms
 from torch.nn.utils.rnn import pack_padded_sequence
 
 # Custom imports
+import AdamHD
 import models as m
 from vocab import Vocabulary, load_vocab
 from data_loader import get_coco_data_loader
@@ -66,7 +66,7 @@ model = m.ShowTell(embed_size = 512,
                     vocab = vocab, 
                     rnn_layers = 1).to(device)
 # Declare optimizer
-optimizer = optim.AdamHD(model.parameters(), lr=lr, hypergrad_lr=1e-8)
+optimizer = AdamHD(model.parameters(), lr=lr, hypergrad_lr=1e-8)
 
 
 # Load in checkpoint to continue training if applicable
