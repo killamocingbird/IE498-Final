@@ -1,0 +1,13 @@
+#PBS -l nodes=01:ppn=16:xe
+#PBS -l walltime=3:00:00
+#PBS -N Download_COCO_Data
+#PBS -e $PBS_JOBID.err
+#PBS -o $PBS_JOBID.out
+
+module load bwpy/2.0.1
+pip install pycocotools
+pip install nltk
+
+cd ~/scratch/IE498-Final
+
+aprun -n 1 -N 1 python temp.py
