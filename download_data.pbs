@@ -5,8 +5,8 @@
 #PBS -o $PBS_JOBID.out
 
 module load bwpy/2.0.1
-pip install pycocotools
-pip install nltk
+pip install pycocotools --user
+pip install nltk --user
 
 cd ~/scratch/IE498-Final
 
