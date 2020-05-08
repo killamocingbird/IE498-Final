@@ -1,4 +1,5 @@
 # Library imports
+from hypergrad import AdamHD
 import numpy as np
 import torch
 import torch.nn as nn
@@ -16,7 +17,7 @@ import utils as u
 
 
 # Header for saving files
-header = 'Model1_'
+header = 'ModelHyper_'
 
 # Hyperparameters for training
 batch_size = 256
@@ -65,7 +66,7 @@ model = m.ShowTell(embed_size = 512,
                     vocab = vocab, 
                     rnn_layers = 1).to(device)
 # Declare optimizer
-optimizer = optim.Adam(model.parameters(), lr=lr)
+optimizer = optim.AdamHD(model.parameters(), lr=lr, hypergrad_lr=1e-8)
 
 
 # Load in checkpoint to continue training if applicable
