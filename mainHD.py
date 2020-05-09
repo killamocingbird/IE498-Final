@@ -21,12 +21,12 @@ header = 'ModelHyper_'
 
 # Hyperparameters for training
 batch_size = 128
-checkpoint = header+'checkpoint.pth'
+checkpoint = None
 criteria = nn.CrossEntropyLoss()
-debug = False
+debug = True
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 epochs = 1000
-lr = 5e-4
+lr = 10
 verbose = 1
 
 # Get dataset
@@ -100,9 +100,6 @@ for epoch in range(epochs):
         pred = model(image, caption, lengths)
         # Pred shape: [sum(lengths), vocab size]
         
-        # Softmax probabilities
-        pred = torch.softmax(pred, 1)
-
         labels = pack_padded_sequence(caption, lengths, batch_first = True)[0]
 
         loss = criteria(pred, labels)
@@ -115,8 +112,8 @@ for epoch in range(epochs):
         running_loss += loss.item()
         
         if debug:
-            u.b_print("Loss: %.8f CNN Grad: %.5f RNN Grad: %.5f"
-                      % (loss.item(), u.get_grad_av_mag(model.CNN.parameters()), u.get_grad_av_mag(model.RNN.parameters())))
+            u.b_print("Loss: %.8f | Bias Grad %.10f"
+                      % (loss.item(), model.RNN.linear.bias.grad)
         
         # Prevent memory leak
         del image, caption, pred, labels, loss
@@ -132,7 +129,6 @@ for epoch in range(epochs):
             caption = caption.to(device)
             
             pred = model(image, caption, lengths)
-            pred = torch.softmax(pred, 1)
             labels = pack_padded_sequence(caption, lengths, batch_first = True)[0]
             
             loss = criteria(pred, labels)
