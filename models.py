@@ -44,13 +44,13 @@ class ShowTell(m.Foundation):
         """
 
         sampled_idxs = self.RNN.sample(self.features)
-        sampled_idxs = sampled_ids.cpu().data.numpy()[0]
-        predicted_sentence = utils.convert_back_to_text(sampled_idxs, vocab)
+        sampled_idxs = sampled_idxs.cpu().data.numpy()[0]
+        predicted_sentence = utils.convert_back_to_text(sampled_idxs, self.vocab)
 
         true_sentence = "<No target sentence provided>"
         try:
             true_idxs = captions.cpu().data.numpy()[0]
-            true_sentence = utils.convert_back_to_text(true_idxs, vocab)
+            true_sentence = utils.convert_back_to_text(true_idxs, self.vocab)
         except:
             pass
 
@@ -59,7 +59,7 @@ class ShowTell(m.Foundation):
 
 # https://github.com/muggin/show-and-tell/blob/master/models.py
 
-class CNN(m.Foundation):
+class CNN(nn.Module):
     """Class to build new model including all but last layers"""
     def __init__(self, embed_size):
         super(CNN, self).__init__()
@@ -80,13 +80,12 @@ class CNN(m.Foundation):
         Since we're applying a linear layer to the end of the pretrained resnet, the features are a 1-D vector
         """
         x = self.resnet(x)
-        x = Variable(x.data) #Variable is depreciated but maybe this is needed?
         x = x.view(x.size(0), -1) # flatten
         x = self.linear(x)
 
         return x
 
-class RNN(m.Foundation):
+class RNN(nn.Module):
     """
     Recurrent Neural Network for Text Generation.
     To be used as part of an Encoder-Decoder network for Image Captioning.
