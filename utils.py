@@ -122,3 +122,11 @@ def b_print(s, buffer=1.):
 # Count number of parameters in a model
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters())
+
+# Get magnitude of parameters of set of parameters
+def get_grad_av_mag(params):
+    magnitudes = []
+    for param in params:
+        magnitudes.append((param.grad**2).sum()**(.5))
+        
+    return torch.as_tensor(magnitudes).mean()

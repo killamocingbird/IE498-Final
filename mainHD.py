@@ -23,6 +23,7 @@ header = 'ModelHyper_'
 batch_size = 128
 checkpoint = header+'checkpoint.pth'
 criteria = nn.CrossEntropyLoss()
+debug = False
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 epochs = 1000
 lr = 5e-4
@@ -112,6 +113,10 @@ for epoch in range(epochs):
         optimizer.step()
         
         running_loss += loss.item()
+        
+        if debug:
+            u.b_print("Loss: %.8f CNN Grad: %.5f RNN Grad: %.5f"
+                      % (loss.item(), u.get_grad_av_mag(self.CNN.parameters()), u.get_grad_av_mag(self.RNN.parameters()))))))
         
         # Prevent memory leak
         del image, caption, pred, labels, loss
