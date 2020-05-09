@@ -20,12 +20,12 @@ import utils as u
 header = 'ModelHyper_'
 
 # Hyperparameters for training
-batch_size = 256
-checkpoint = None
+batch_size = 128
+checkpoint = header+'checkpoint.pth'
 criteria = nn.CrossEntropyLoss()
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 epochs = 1000
-lr = 1e-3
+lr = 5e-4
 verbose = 1
 
 # Get dataset
@@ -66,7 +66,7 @@ model = m.ShowTell(embed_size = 512,
                     vocab = vocab, 
                     rnn_layers = 1).to(device)
 # Declare optimizer
-optimizer = AdamHD(model.parameters(), lr=lr, hypergrad_lr=1e-8)
+optimizer = AdamHD.AdamHD(model.parameters(), lr=lr, hypergrad_lr=1e-8)
 
 
 # Load in checkpoint to continue training if applicable
