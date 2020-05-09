@@ -116,7 +116,7 @@ for epoch in range(epochs):
         
         if debug:
             u.b_print("Loss: %.8f CNN Grad: %.5f RNN Grad: %.5f"
-                      % (loss.item(), u.get_grad_av_mag(self.CNN.parameters()), u.get_grad_av_mag(self.RNN.parameters()))))))
+                      % (loss.item(), u.get_grad_av_mag(model.CNN.parameters()), u.get_grad_av_mag(model.RNN.parameters())))
         
         # Prevent memory leak
         del image, caption, pred, labels, loss
