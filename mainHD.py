@@ -1,12 +1,12 @@
 # Library imports
 import numpy as np
+import sys
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
-from tqdm import tqdm
-from torchvision import datasets, models, transforms
 from torch.nn.utils.rnn import pack_padded_sequence
+from torch.optim.lr_scheduler import MultiStepLR
+from tqdm import tqdm
+from torchvision import models, transforms
 
 # Custom imports
 import AdamHD
@@ -22,15 +22,19 @@ torch.manual_seed(0)
 header = 'ModelHyper_'
 
 # Hyperparameters for training
+<<<<<<< HEAD
 batch_size = 1
 checkpoint = header+'checkpoint.pth'
+=======
+batch_size = 128
+>>>>>>> 5a562b6407f8a537aaed92614bd31aa968c935a6
 checkpoint = None
 criteria = nn.CrossEntropyLoss()
 criteria = nn.MSELoss()
 debug = True
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 epochs = 1000
-lr = 5e-4
+lr = 1e-1
 verbose = 1
 
 # Get dataset
@@ -73,9 +77,12 @@ model = m.ShowTell(embed_size = 512,
 # Declare optimizer
 optimizer = AdamHD.AdamHD(model.parameters(), lr=lr, hypergrad_lr=1e-8)
 
+<<<<<<< HEAD
 
 
 
+=======
+>>>>>>> 5a562b6407f8a537aaed92614bd31aa968c935a6
 # Load in checkpoint to continue training if applicable
 if checkpoint is not None:
     u.b_print("Loading checkpoint")
@@ -88,6 +95,8 @@ if checkpoint is not None:
             if isinstance(v, torch.Tensor):
                 state[k] = v.to(device)
 
+# Declare scheduler
+scheduler = MultiStepLR(optimizer, [1, 2, 10])
 
 # Book keep lowest lost for early stopping
 min_loss = 1e8
@@ -110,12 +119,15 @@ for epoch in range(epochs):
         pred = model(image, caption, lengths)
         # Pred shape: [sum(lengths), vocab size]
         
+<<<<<<< HEAD
         # Softmax probabilities
         #pred = torch.softmax(pred, 1)
         print()
         print("presigmoid, ", pred)
         pred = torch.sigmoid(pred)
 
+=======
+>>>>>>> 5a562b6407f8a537aaed92614bd31aa968c935a6
         labels = pack_padded_sequence(caption, lengths, batch_first = True)[0]
 
         print("prediction, ", pred)
@@ -134,6 +146,7 @@ for epoch in range(epochs):
         running_loss += loss.item()
         
         if debug:
+<<<<<<< HEAD
             print("Linear Layer")
             #print(model.RNN.linear.weight.grad)
             #print(model.RNN.linear.weight.grad.shape)
@@ -151,6 +164,9 @@ for epoch in range(epochs):
             print()
             u.b_print("Loss: %.8f CNN Grad: %.5f RNN Grad: %.5f"
                       % (loss.item(), u.get_grad_av_mag(model.CNN.parameters()), 10))#u.get_grad_av_mag(model.RNN.parameters())))
+=======
+            u.b_print("Loss: %.8f | Bias Grad %.10f" % (loss.item(), model.RNN.linear.bias.grad.mean()))
+>>>>>>> 5a562b6407f8a537aaed92614bd31aa968c935a6
         
         # Prevent memory leak
         del image, caption, pred, labels, loss
@@ -166,7 +182,6 @@ for epoch in range(epochs):
             caption = caption.to(device)
             
             pred = model(image, caption, lengths)
-            pred = torch.softmax(pred, 1)
             labels = pack_padded_sequence(caption, lengths, batch_first = True)[0]
             
             loss = criteria(pred, labels)
@@ -189,7 +204,11 @@ for epoch in range(epochs):
         
     # Do output
     if (epoch+1)%verbose==0:
-        u.b_print("[%d] train: %.8f val: %.8f" % (epoch+1, running_loss, running_val_loss))
+        if debug:
+            sys.stderr.write("[%d] train: %.8f val: %.8f" % (epoch+1, running_loss, running_val_loss))
+        else:
+            u.b_print("[%d] train: %.8f val: %.8f" % (epoch+1, running_loss, running_val_loss))
     
-        
+    # Step scheduler
+    scheduler.step()
         

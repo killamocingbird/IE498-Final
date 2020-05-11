@@ -44,13 +44,13 @@ class ShowTell(m.Foundation):
         """
 
         sampled_idxs = self.RNN.sample(self.features)
-        sampled_idxs = sampled_ids.cpu().data.numpy()[0]
-        predicted_sentence = utils.convert_back_to_text(sampled_idxs, vocab)
+        sampled_idxs = sampled_idxs.cpu().data.numpy()[0]
+        predicted_sentence = utils.convert_back_to_text(sampled_idxs, self.vocab)
 
         true_sentence = "<No target sentence provided>"
         try:
             true_idxs = captions.cpu().data.numpy()[0]
-            true_sentence = utils.convert_back_to_text(true_idxs, vocab)
+            true_sentence = utils.convert_back_to_text(true_idxs, self.vocab)
         except:
             pass
 
@@ -68,19 +68,18 @@ class CNN(nn.Module):
         self.resnet = Sequential(*list(pretrained_model.children())[:-1])
         self.linear = nn.Linear(pretrained_model.fc.in_features, embed_size)
         self.batchnorm = nn.BatchNorm1d(embed_size, momentum=0.01)
-        #self.init_weights()
-
-    #def init_weights(self):
-        # weight init, inspired by tutorial
-        #self.linear.weight.data.normal_(0,0.02)
-        #self.linear.bias.data.fill_(0)
+#        self.init_weights()
+#
+#    def init_weights(self):
+#        # weight init, inspired by tutorial
+#        self.linear.weight.data.normal_(0,0.02)
+#        self.linear.bias.data.fill_(0)
 
     def forward(self, x):
         """
         Since we're applying a linear layer to the end of the pretrained resnet, the features are a 1-D vector
         """
         x = self.resnet(x)
-        #x = Variable(x.data) #Variable is depreciated but maybe this is needed?
         x = x.view(x.size(0), -1) # flatten
         x = self.linear(x)
 
@@ -126,8 +125,6 @@ class RNN(nn.Module):
 
         # run data through recurrent network
         hiddens, _ = self.unit(inputs_packed)
-        print('hidden input to linear shape: ', hiddens[0].shape)
-        #print(hiddens[0])
         outputs = self.linear(hiddens[0])
         return outputs
 

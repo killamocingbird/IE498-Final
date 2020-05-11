@@ -152,4 +152,3 @@ for epoch in range(epochs):
         u.b_print("[%d] train: %.8f val: %.8f" % (epoch+1, running_loss, running_val_loss))
     
         
-        
