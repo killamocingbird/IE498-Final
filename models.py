@@ -59,7 +59,7 @@ class ShowTell(m.Foundation):
 
 # https://github.com/muggin/show-and-tell/blob/master/models.py
 
-class CNN(m.Foundation):
+class CNN(nn.Module):
     """Class to build new model including all but last layers"""
     def __init__(self, embed_size):
         super(CNN, self).__init__()
@@ -68,25 +68,25 @@ class CNN(m.Foundation):
         self.resnet = Sequential(*list(pretrained_model.children())[:-1])
         self.linear = nn.Linear(pretrained_model.fc.in_features, embed_size)
         self.batchnorm = nn.BatchNorm1d(embed_size, momentum=0.01)
-        self.init_weights()
+        #self.init_weights()
 
-    def init_weights(self):
+    #def init_weights(self):
         # weight init, inspired by tutorial
-        self.linear.weight.data.normal_(0,0.02)
-        self.linear.bias.data.fill_(0)
+        #self.linear.weight.data.normal_(0,0.02)
+        #self.linear.bias.data.fill_(0)
 
     def forward(self, x):
         """
         Since we're applying a linear layer to the end of the pretrained resnet, the features are a 1-D vector
         """
         x = self.resnet(x)
-        x = Variable(x.data) #Variable is depreciated but maybe this is needed?
+        #x = Variable(x.data) #Variable is depreciated but maybe this is needed?
         x = x.view(x.size(0), -1) # flatten
         x = self.linear(x)
 
         return x
 
-class RNN(m.Foundation):
+class RNN(nn.Module):
     """
     Recurrent Neural Network for Text Generation.
     To be used as part of an Encoder-Decoder network for Image Captioning.
@@ -126,6 +126,8 @@ class RNN(m.Foundation):
 
         # run data through recurrent network
         hiddens, _ = self.unit(inputs_packed)
+        print('hidden input to linear shape: ', hiddens[0].shape)
+        #print(hiddens[0])
         outputs = self.linear(hiddens[0])
         return outputs
 

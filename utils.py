@@ -127,6 +127,12 @@ def count_parameters(model):
 def get_grad_av_mag(params):
     magnitudes = []
     for param in params:
-        magnitudes.append((param.grad**2).sum()**(.5))
+        print()
+        try:
+            if param.grad == None: print('NO GRAD {}'.format(param.shape))
+        except TypeError:
+            print(param.grad.shape)
+            print((param.grad**2).sum()**(.5))
+            magnitudes.append((param.grad**2).sum()**(.5))
         
     return torch.as_tensor(magnitudes).mean()

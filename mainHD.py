@@ -16,14 +16,18 @@ from data_loader import get_coco_data_loader
 import utils as u
 
 
+torch.manual_seed(0)
+
 # Header for saving files
 header = 'ModelHyper_'
 
 # Hyperparameters for training
-batch_size = 128
+batch_size = 1
 checkpoint = header+'checkpoint.pth'
+checkpoint = None
 criteria = nn.CrossEntropyLoss()
-debug = False
+criteria = nn.MSELoss()
+debug = True
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 epochs = 1000
 lr = 5e-4
@@ -70,6 +74,8 @@ model = m.ShowTell(embed_size = 512,
 optimizer = AdamHD.AdamHD(model.parameters(), lr=lr, hypergrad_lr=1e-8)
 
 
+
+
 # Load in checkpoint to continue training if applicable
 if checkpoint is not None:
     u.b_print("Loading checkpoint")
@@ -90,10 +96,14 @@ for epoch in range(epochs):
     # Book keeping
     running_loss = 0
     model.train()
-    for i, (image, caption, lengths) in enumerate(tqdm(train_loader)):
+    for i, (image, caption, lengths) in enumerate(train_loader):
         # Cast to device
         image = image.to(device)
         caption = caption.to(device)
+        if debug:
+            lengths[0] = 1
+            caption = caption[:,:1]
+            print(caption.shape)
         
         # Image shape:   [batch, 3, x, y], 
         # Caption shape: [batch, tokens]
@@ -101,9 +111,18 @@ for epoch in range(epochs):
         # Pred shape: [sum(lengths), vocab size]
         
         # Softmax probabilities
-        pred = torch.softmax(pred, 1)
+        #pred = torch.softmax(pred, 1)
+        print()
+        print("presigmoid, ", pred)
+        pred = torch.sigmoid(pred)
 
         labels = pack_padded_sequence(caption, lengths, batch_first = True)[0]
+
+        print("prediction, ", pred)
+        labels = pred.clone().detach() * 0.
+        labels[0][0] = 1.
+        print("labels,     ", labels)
+        print()
 
         loss = criteria(pred, labels)
         
@@ -115,8 +134,23 @@ for epoch in range(epochs):
         running_loss += loss.item()
         
         if debug:
+            print("Linear Layer")
+            #print(model.RNN.linear.weight.grad)
+            #print(model.RNN.linear.weight.grad.shape)
+            print(model.RNN.linear.bias.grad)
+            print(model.RNN.linear.bias.grad.shape)
+
+
+            print(2 * (pred - labels)/ model.RNN.linear.bias.grad)
+            exit()
+
+            print('RNN')
+            u.get_grad_av_mag(model.RNN.parameters())
+            print('CNN')
+            u.get_grad_av_mag(model.CNN.parameters())
+            print()
             u.b_print("Loss: %.8f CNN Grad: %.5f RNN Grad: %.5f"
-                      % (loss.item(), u.get_grad_av_mag(model.CNN.parameters()), u.get_grad_av_mag(model.RNN.parameters())))
+                      % (loss.item(), u.get_grad_av_mag(model.CNN.parameters()), 10))#u.get_grad_av_mag(model.RNN.parameters())))
         
         # Prevent memory leak
         del image, caption, pred, labels, loss
