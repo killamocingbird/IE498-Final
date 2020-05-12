@@ -16,19 +16,17 @@ from data_loader import get_coco_data_loader
 import utils as u
 
 
-torch.manual_seed(0)
-
 # Header for saving files
-header = 'ModelHyper_'
+header = 'ModelFrozen_'
 
 # Hyperparameters for training
 batch_size = 128
-checkpoint = header+'checkpoint.pth'
+checkpoint = None
 criteria = nn.CrossEntropyLoss()
-debug = False
+debug = True
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 epochs = 1000
-lr = 1e-4
+lr = 1e-2
 verbose = 1
 
 # Get dataset
@@ -68,15 +66,14 @@ model = m.ShowTell(embed_size = 512,
                     rnn_hidden_size = 512, 
                     vocab = vocab, 
                     rnn_layers = 1).to(device)
+
+# Freeze parameters in CNN
+for param in model.CNN.parameters():
+    param.requires_grad = False
+
 # Declare optimizer
-optimizer = AdamHD.AdamHD(model.parameters(), lr=lr, hypergrad_lr=1e-8)
+optimizer = AdamHD.AdamHD(model.RNN.parameters(), lr=lr, hypergrad_lr=1e-8)
 
-<<<<<<< HEAD
-
-
-
-=======
->>>>>>> 5a562b6407f8a537aaed92614bd31aa968c935a6
 # Load in checkpoint to continue training if applicable
 if checkpoint is not None:
     u.b_print("Loading checkpoint")
@@ -90,7 +87,7 @@ if checkpoint is not None:
                 state[k] = v.to(device)
 
 # Declare scheduler
-#scheduler = MultiStepLR(optimizer, [1, 2, 10])
+scheduler = MultiStepLR(optimizer, [1, 2, 10])
 
 # Book keep lowest lost for early stopping
 min_loss = 1e8
@@ -99,36 +96,17 @@ for epoch in range(epochs):
     # Book keeping
     running_loss = 0
     model.train()
-    for i, (image, caption, lengths) in enumerate(train_loader):
+    for i, (image, caption, lengths) in enumerate(tqdm(train_loader)):
         # Cast to device
         image = image.to(device)
         caption = caption.to(device)
-        if debug:
-            lengths[0] = 1
-            caption = caption[:,:1]
-            print(caption.shape)
         
         # Image shape:   [batch, 3, x, y], 
         # Caption shape: [batch, tokens]
         pred = model(image, caption, lengths)
         # Pred shape: [sum(lengths), vocab size]
         
-<<<<<<< HEAD
-        # Softmax probabilities
-        #pred = torch.softmax(pred, 1)
-        print()
-        print("presigmoid, ", pred)
-        pred = torch.sigmoid(pred)
-
-=======
->>>>>>> 5a562b6407f8a537aaed92614bd31aa968c935a6
         labels = pack_padded_sequence(caption, lengths, batch_first = True)[0]
-
-        print("prediction, ", pred)
-        labels = pred.clone().detach() * 0.
-        labels[0][0] = 1.
-        print("labels,     ", labels)
-        print()
 
         loss = criteria(pred, labels)
         
@@ -140,27 +118,7 @@ for epoch in range(epochs):
         running_loss += loss.item()
         
         if debug:
-<<<<<<< HEAD
-            print("Linear Layer")
-            #print(model.RNN.linear.weight.grad)
-            #print(model.RNN.linear.weight.grad.shape)
-            print(model.RNN.linear.bias.grad)
-            print(model.RNN.linear.bias.grad.shape)
-
-
-            print(2 * (pred - labels)/ model.RNN.linear.bias.grad)
-            exit()
-
-            print('RNN')
-            u.get_grad_av_mag(model.RNN.parameters())
-            print('CNN')
-            u.get_grad_av_mag(model.CNN.parameters())
-            print()
-            u.b_print("Loss: %.8f CNN Grad: %.5f RNN Grad: %.5f"
-                      % (loss.item(), u.get_grad_av_mag(model.CNN.parameters()), 10))#u.get_grad_av_mag(model.RNN.parameters())))
-=======
-            u.b_print("Loss: %.8f | Bias Grad %.10f" % (loss.item(), model.RNN.linear.bias.grad.mean()))
->>>>>>> 5a562b6407f8a537aaed92614bd31aa968c935a6
+            u.b_print("Loss: %.8f" % (loss.item()))
         
         # Prevent memory leak
         del image, caption, pred, labels, loss
@@ -201,5 +159,5 @@ for epoch in range(epochs):
         u.b_print("[%d] train: %.8f val: %.8f" % (epoch+1, running_loss, running_val_loss))
     
     # Step scheduler
-#    scheduler.step()
+    scheduler.step()
         
