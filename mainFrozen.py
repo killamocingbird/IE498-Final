@@ -17,16 +17,16 @@ import utils as u
 
 
 # Header for saving files
-header = 'ModelHyper_'
+header = 'ModelFrozen_'
 
 # Hyperparameters for training
 batch_size = 128
-checkpoint = header+'checkpoint.pth'
+checkpoint = None
 criteria = nn.CrossEntropyLoss()
-debug = False
+debug = True
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 epochs = 1000
-lr = 1e-4
+lr = 1e-2
 verbose = 1
 
 # Get dataset
@@ -66,8 +66,13 @@ model = m.ShowTell(embed_size = 512,
                     rnn_hidden_size = 512, 
                     vocab = vocab, 
                     rnn_layers = 1).to(device)
+
+# Freeze parameters in CNN
+for param in model.CNN.parameters():
+    param.requires_grad = False
+
 # Declare optimizer
-optimizer = AdamHD.AdamHD(model.parameters(), lr=lr, hypergrad_lr=1e-8)
+optimizer = AdamHD.AdamHD(model.RNN.parameters(), lr=lr, hypergrad_lr=1e-8)
 
 # Load in checkpoint to continue training if applicable
 if checkpoint is not None:
@@ -82,7 +87,7 @@ if checkpoint is not None:
                 state[k] = v.to(device)
 
 # Declare scheduler
-#scheduler = MultiStepLR(optimizer, [1, 2, 10])
+scheduler = MultiStepLR(optimizer, [1, 2, 10])
 
 # Book keep lowest lost for early stopping
 min_loss = 1e8
@@ -113,7 +118,7 @@ for epoch in range(epochs):
         running_loss += loss.item()
         
         if debug:
-            u.b_print("Loss: %.8f | Bias Grad %.10f" % (loss.item(), model.RNN.linear.bias.grad.mean()))
+            u.b_print("Loss: %.8f" % (loss.item()))
         
         # Prevent memory leak
         del image, caption, pred, labels, loss
@@ -154,5 +159,5 @@ for epoch in range(epochs):
         u.b_print("[%d] train: %.8f val: %.8f" % (epoch+1, running_loss, running_val_loss))
     
     # Step scheduler
-#    scheduler.step()
+    scheduler.step()
         
