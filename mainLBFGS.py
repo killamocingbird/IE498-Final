@@ -105,15 +105,14 @@ for epoch in range(epochs):
         
         # Define a closure for optimization
         def closure():
-            nonlocal image
-            nonlocal caption
-            nonlocal labels
-            
             if torch.is_grad_enabled():
                 optimizer.zero_grad()
             pred = model(image, caption, lengths)
             loss = criteria(pred, labels)
+            print(loss)
             loss.backward()
+            
+            return loss
             
         optimizer.step(closure)
             
