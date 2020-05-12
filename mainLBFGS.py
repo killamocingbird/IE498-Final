@@ -18,7 +18,7 @@ import utils as u
 
 
 # Header for saving files
-header = 'ModelFrozen_'
+header = 'ModelQuasi_'
 
 # Hyperparameters for training
 batch_size = 128
@@ -92,6 +92,7 @@ if checkpoint is not None:
 
 # Book keep lowest lost for early stopping
 min_loss = 1e8
+min_batch_loss = 1e8
 u.b_print("Optimizing %d parameters on %s" % (u.count_parameters(model.RNN), device))
 for epoch in range(epochs):
     # Book keeping
@@ -119,6 +120,11 @@ for epoch in range(epochs):
         with torch.no_grad():
             pred = model(image, caption, lengths)
             loss = criteria(pred, labels)
+        
+        # Save lowest batch loss
+        if debug and loss < min_batch_loss:
+            min_batch_loss = loss.item()
+            model.save(header=header+'_b_', optimizer=optimizer)
         
         running_loss += loss.item()
         
