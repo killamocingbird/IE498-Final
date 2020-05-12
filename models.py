@@ -34,22 +34,24 @@ class ShowTell(m.Foundation):
         outputs = self.RNN(features, captions, lengths)
 
         self.features = features # saved in case we want to access
+        self.captions = captions
 
         return outputs
 
-    def sample(self, captions = None):
+    def sample(self):
         """
         Returns:
         (str) sentence: The output of the RNN based on the most recently calculated features as a readable sentence
         """
 
         sampled_idxs = self.RNN.sample(self.features)
-        sampled_idxs = sampled_idxs.cpu().data.numpy()[0]
+        sampled_idxs = sampled_idxs.cpu().data.numpy()
+
         predicted_sentence = utils.convert_back_to_text(sampled_idxs, self.vocab)
 
         true_sentence = "<No target sentence provided>"
         try:
-            true_idxs = captions.cpu().data.numpy()[0]
+            true_idxs = self.captions.cpu().data.numpy()[0]
             true_sentence = utils.convert_back_to_text(true_idxs, self.vocab)
         except:
             pass
@@ -141,14 +143,13 @@ class RNN(nn.Module):
         for i in range(max_len):
             # pass data through recurrent network
             hiddens, states = self.unit(inputs, states)
+            #if i == 1: print(hiddens[0])
             outputs = self.linear(hiddens.squeeze(1))
-
+            #if i == 1: print(outputs[0])
             # find maximal predictions
             predicted = outputs.max(1)[1]
-
             # append results from given step to global results
             output_ids.append(predicted)
-
             # prepare chosen words for next decoding step
             inputs = self.embeddings(predicted)
             inputs = inputs.unsqueeze(1)
