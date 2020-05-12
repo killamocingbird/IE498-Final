@@ -20,7 +20,7 @@ import utils as u
 header = 'ModelFrozen_'
 
 # Hyperparameters for training
-batch_size = 128
+batch_size = 256
 checkpoint = None
 criteria = nn.CrossEntropyLoss()
 debug = True
@@ -87,11 +87,11 @@ if checkpoint is not None:
                 state[k] = v.to(device)
 
 # Declare scheduler
-scheduler = MultiStepLR(optimizer, [1, 2, 10])
+scheduler = MultiStepLR(optimizer, [1, 2, 5])
 
 # Book keep lowest lost for early stopping
 min_loss = 1e8
-u.b_print("Optimizing %d parameters on %s" % (u.count_parameters(model), device))
+u.b_print("Optimizing %d parameters on %s" % (u.count_parameters(model.RNN), device))
 for epoch in range(epochs):
     # Book keeping
     running_loss = 0
