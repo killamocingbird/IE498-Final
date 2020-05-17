@@ -1,0 +1,49 @@
+1:
+a man is sitting on a bench with an umbrella
+A man is sitting on a bench with a dog
+
+2:
+a man is sitting on top of a wooden bench
+a man is sitting on top of a wooden bench
+
+3:
+a suitcase sitting on a bench in front of a bed
+a man is sitting on a bench in front of a building
+
+4:
+a man is holding a pizza in his hand
+a man is holding a frisbee in his hand
+
+5:
+a man is riding a skateboard on a ramp
+a man is holding a skateboard on a ramp
+
+6:
+a orange is sitting on a desk with a knife
+a man is sitting on a bench with a dog
+
+7:
+several bento boxes are shown with vegetables and noodles while tiny toy figurines are on top of the food
+a man sitting on top of a wooden bench
+
+8:
+a man is sitting on a bench in front of a building
+a bag is sitting on a park bench next to a small luggage with an umbrella on top
+
+9: 
+a kid playing with a frisbee in the yard
+a man is holding a frisbee in his hand
+
+10:
+a girl is holding a tennis racket on a court
+a man is holding a skateboard on a ramp 
+
+
+Good
+2 5 9
+
+Okay
+1 4
+
+Bad
+10 8 7 6 3

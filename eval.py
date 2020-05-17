@@ -6,7 +6,7 @@ from torchvision import datasets, models, transforms
 from torchvision import transforms
 from torch.nn.utils.rnn import pack_padded_sequence
 from tqdm import tqdm
-from nltk.translate.bleu_score import corpus_bleu
+from nlgeval import NLGEval
 import os
 
 # Custom imports
@@ -21,7 +21,8 @@ torch.manual_seed(0)
 batch_size = 1
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 beam_size = 7
-checkpoint = 'ModelHyper_checkpoint.pth'
+checkpoint = 'ModelFrozen_checkpoint.pth'
+#checkpoint = 'Checkpoints/ModelFrozen_checkpoint.pth'
 
 # Image Preprocessing
 transform = transforms.Compose([
@@ -34,7 +35,7 @@ transform = transforms.Compose([
 # load COCO test dataset
 vocab = load_vocab()
 
-dataset = 'train' # or 'val'
+dataset = 'val' # 'test' or 'val'
 
 IMAGES_PATH = 'data/{}2014'.format(dataset)
 CAPTION_FILE_PATH = 'data/annotations/captions_{}2014.json'.format(dataset)
@@ -53,7 +54,7 @@ model = m.ShowTell(embed_size = 512,
 
 # Load in checkpoint to continue training if applicable
 if checkpoint is not None:
-    u.b_print("Loading checkpoint")
+    u.b_print("Loading checkpoint {}".format(checkpoint))
     checkpoint = torch.load(checkpoint, map_location=lambda storage, loc: storage)
     model.load(checkpoint)
     model = model.to(device)
@@ -63,6 +64,9 @@ if checkpoint is not None:
 # references = [[ref1a], [ref2a], ...], hypotheses = [hyp1, hyp2, ...]
 references = list()
 hypotheses = list()
+
+print('training loss:', model.train_loss)
+print('val loss:', model.val_loss)
 
 print('<end> index: ', vocab.word2idx['<end>'])
 print('<start> index: ', vocab.word2idx['<start>'])
@@ -192,11 +196,11 @@ try: # except KeyBoardInterrupt
 
         assert len(references) == len(hypotheses)
 except KeyboardInterrupt:
-    print('Early stopping of evaluation, trying bleu metric if possible')
+    print('Early stopping of evaluation, evaluating metrics')
 finally:
     # Calculate BLEU-4 scores
-    print(references)
-    print(hypotheses)
-    bleu4 = corpus_bleu(references, hypotheses)
-    print(bleu4) # this is broken!! what is going on?
-    # original reference here: https://github.com/sgrvinod/a-PyTorch-Tutorial-to-Image-Captioning/blob/master/eval.py
+    #print(references)
+    #print(hypotheses)
+    nlgeval = NLGEval() 
+    metrics_dict = nlgeval.compute_metrics(references, hypothesis)
+    print(metrics_dict)
