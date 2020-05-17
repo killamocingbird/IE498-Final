@@ -10,6 +10,7 @@ from torchvision import models, transforms
 
 # Custom imports
 import AdamHD
+from lbfgs import Stoch_LBFGS
 import models as m
 from vocab import Vocabulary, load_vocab
 from data_loader import get_coco_data_loader
@@ -17,16 +18,16 @@ import utils as u
 
 
 # Header for saving files
-header = 'ModelFrozen_'
+header = 'ModelQuasi_'
 
 # Hyperparameters for training
-batch_size = 256
+batch_size = 128
 checkpoint = None
 criteria = nn.CrossEntropyLoss()
 debug = True
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 epochs = 1000
-lr = 1e-2
+lr = 1e-3
 verbose = 1
 
 # Get dataset
@@ -72,7 +73,7 @@ for param in model.CNN.parameters():
     param.requires_grad = False
 
 # Declare optimizer
-optimizer = AdamHD.AdamHD(model.RNN.parameters(), lr=lr, hypergrad_lr=1e-8)
+optimizer = Stoch_LBFGS(model.RNN.parameters(), batch_mode=True, line_search_fn=True)
 
 # Load in checkpoint to continue training if applicable
 if checkpoint is not None:
@@ -87,10 +88,11 @@ if checkpoint is not None:
                 state[k] = v.to(device)
 
 # Declare scheduler
-scheduler = MultiStepLR(optimizer, [1, 2, 5])
+#scheduler = MultiStepLR(optimizer, [1, 2, 5])
 
 # Book keep lowest lost for early stopping
 min_loss = 1e8
+min_batch_loss = 1e8
 u.b_print("Optimizing %d parameters on %s" % (u.count_parameters(model.RNN), device))
 for epoch in range(epochs):
     # Book keeping
@@ -100,20 +102,29 @@ for epoch in range(epochs):
         # Cast to device
         image = image.to(device)
         caption = caption.to(device)
-        
-        # Image shape:   [batch, 3, x, y], 
-        # Caption shape: [batch, tokens]
-        pred = model(image, caption, lengths)
-        # Pred shape: [sum(lengths), vocab size]
-        
         labels = pack_padded_sequence(caption, lengths, batch_first = True)[0]
-
-        loss = criteria(pred, labels)
         
-        # Gradient step
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+        # Define a closure for optimization
+        def closure():
+            with torch.enable_grad():
+                optimizer.zero_grad()
+                pred = model(image, caption, lengths)
+                loss = criteria(pred, labels)
+                print(loss)
+                loss.backward()
+            return loss
+            
+        optimizer.step(closure)
+            
+        # Recalculate loss for book keeping
+        with torch.no_grad():
+            pred = model(image, caption, lengths)
+            loss = criteria(pred, labels)
+        
+        # Save lowest batch loss
+        if debug and loss < min_batch_loss:
+            min_batch_loss = loss.item()
+            model.save(header=header+'_b_', optimizer=optimizer)
         
         running_loss += loss.item()
         
@@ -159,5 +170,5 @@ for epoch in range(epochs):
         u.b_print("[%d] train: %.8f val: %.8f" % (epoch+1, running_loss, running_val_loss))
     
     # Step scheduler
-    scheduler.step()
+#    scheduler.step()
         
