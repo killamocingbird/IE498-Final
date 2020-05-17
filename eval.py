@@ -63,7 +63,8 @@ if checkpoint is not None:
 # If for n images, we have n hypotheses, and references a, b, c... for each image, we need -
 # references = [[ref1a], [ref2a], ...], hypotheses = [hyp1, hyp2, ...]
 references = list()
-hypotheses = list()
+hypotheses1 = list()
+hypotheses2 = list()
 
 print('training loss:', model.train_loss)
 print('val loss:', model.val_loss)
@@ -185,22 +186,19 @@ try: # except KeyBoardInterrupt
         print('Beam Search: \n', hypothesis_str)
 
         # References (EXPECTED MULTIPLE CAPTIONS?)
-        img_cap = caption.tolist()
-        img_captions = list(
-            map(lambda c: [w for w in c if w not in {vocab.word2idx['<start>'], vocab.word2idx['<end>'], vocab.word2idx['<pad>']}],
-                img_cap))  # remove <start> and pads
+        img_cap = caption.tolist()[0]
+        img_captions = ' '.join([vocab.idx2word[w] for w in img_cap if w not in {vocab.word2idx['<start>'], vocab.word2idx['<end>'], vocab.word2idx['<pad>']}]) # remove <start> and pads
         references.append(img_captions)
 
         # Hypotheses
-        hypotheses.append([w for w in seq if w not in {vocab.word2idx['<start>'], vocab.word2idx['<end>'], vocab.word2idx['<pad>']}])
-
-        assert len(references) == len(hypotheses)
+        hypotheses1.append(' '.join([vocab.idx2word[w] for w in seq if w not in {vocab.word2idx['<start>'], vocab.word2idx['<end>'], vocab.word2idx['<pad>']}]))
+        hypotheses2.append(pred)
 except KeyboardInterrupt:
     print('Early stopping of evaluation, evaluating metrics')
 finally:
     # Calculate BLEU-4 scores
-    #print(references)
-    #print(hypotheses)
+    hypotheses = [hypotheses1, hypotheses2]
     nlgeval = NLGEval() 
-    metrics_dict = nlgeval.compute_metrics(references, hypothesis)
+    print('loaded eval metric calculator')
+    metrics_dict = nlgeval.compute_metrics(hypotheses, references)
     print(metrics_dict)
